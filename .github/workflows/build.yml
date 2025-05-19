@@ -1,14 +1,17 @@
-name: Build Nuxt App for IIS
+name: Build Nuxt App for IIS and Upload Artifact
 
 on:
   push:
     branches:
       - master
       - staging
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
+    environment: ${{ github.ref == 'refs/heads/master' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'development' }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,5 +24,89 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Replace config values from secrets
+        shell: pwsh
+        run: |
+          $jsonPath = "./public/assets/config/config.json"
+          $json = Get-Content $jsonPath | ConvertFrom-Json
+
+          $mapping = @{
+            "api" = "${{ secrets.API_URL }}"
+            "openid.url" = "${{ secrets.OPENID_URL }}"
+            "openid.scopes" = "${{ secrets.OPENID_SCOPES }}"
+          }
+
+          foreach ($key in $mapping.Keys) {
+            $pathParts = $key -split '\.'
+            if ($pathParts.Length -eq 1) {
+              $json.$key = $mapping[$key]
+            } elseif ($pathParts.Length -eq 2) {
+              $parent = $pathParts[0]
+              $child = $pathParts[1]
+              if ($json.PSObject.Properties.Name -contains $parent) {
+                $json.$parent.$child = $mapping[$key]
+              }
+            }
+          }
+
+          $json | ConvertTo-Json -Depth 10 | Set-Content $jsonPath
+
       - name: Build Nuxt app for IIS
         run: npx nuxi build --preset=iis_node
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          include-hidden-files: true
+          name: nuxt-iis-output
+          path: ./.output
+
+  deploy-staging:
+    if: github.ref == 'refs/heads/staging'
+    needs: build
+    runs-on: local-runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Stáhni artefakt
+        uses: actions/download-artifact@v4
+        with:
+          name: nuxt-iis-output
+          path: ./deploy
+
+      - name: Kopíruj na disk (místo IIS)
+        run: |
+          $source = "$(Resolve-Path ./deploy)"
+          $destination = "C:\TestDeploy\nuxt-app"
+          if (Test-Path $destination) {
+            Remove-Item $destination -Recurse -Force
+          }
+          New-Item -ItemType Directory -Path $destination | Out-Null
+          Copy-Item "$source\*" "$destination" -Recurse
+        shell: powershell
+
+  deploy-production:
+    if: github.ref == 'refs/heads/master'
+    needs: build
+    runs-on: production-runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Stáhni artefakt
+        uses: actions/download-artifact@v4
+        with:
+          name: nuxt-iis-output
+          path: ./deploy
+
+      - name: Kopíruj na disk (místo IIS)
+        run: |
+          $source = "$(Resolve-Path ./deploy)"
+          $destination = "C:\TestDeploy\nuxt-app"
+          if (Test-Path $destination) {
+            Remove-Item $destination -Recurse -Force
+          }
+          New-Item -ItemType Directory -Path $destination | Out-Null
+          Copy-Item "$source\*" "$destination" -Recurse
+        shell: powershell   
