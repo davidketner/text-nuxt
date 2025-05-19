@@ -74,14 +74,14 @@ jobs:
           name: nuxt-iis-output
           path: ./deploy
 
-        - name: Kopíruj na disk (místo IIS)
-          run: |
-            $source = "$(Resolve-Path ./deploy)"
-            $destination = "C:\TestDeploy\nuxt-app"
-            if (Test-Path $destination) {
-              Remove-Item $destination -Recurse -Force
-            }
-            New-Item -ItemType Directory -Path $destination | Out-Null
-            Copy-Item "$source\*" "$destination" -Recurse
-          shell: powershell
+      - name: Kopíruj na disk (místo IIS)
+        run: |
+          $source = "$(Resolve-Path ./deploy)"
+          $destination = "C:\TestDeploy\nuxt-app"
+          if (Test-Path $destination) {
+            Remove-Item $destination -Recurse -Force
+          }
+          New-Item -ItemType Directory -Path $destination | Out-Null
+          Copy-Item "$source\*" "$destination" -Recurse
+        shell: powershell
 
