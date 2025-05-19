@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ./nuxt-app
 
     steps:
       - name: Checkout repository
@@ -28,4 +31,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nuxt-iis-output
-          path: ./.output
+          path: nuxt-app/.output
