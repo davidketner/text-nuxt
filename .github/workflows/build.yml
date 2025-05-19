@@ -5,7 +5,7 @@ on:
     branches:
       - master
       - staging
-
+  workflow_dispatch:
 jobs:
   build:
     runs-on: windows-latest
@@ -59,3 +59,25 @@ jobs:
           include-hidden-files: true
           name: nuxt-iis-output
           path: ./.output
+
+    deploy:
+      needs: build
+      runs-on: self-hosted
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Stáhni artefakt
+          uses: actions/download-artifact@v4
+          with:
+            name: nuxt-iis-output
+            path: ./deploy
+
+        - name: Kopíruj na disk (místo IIS)
+          run: |
+            $source = "$(Resolve-Path ./deploy)"
+            $destination = "C:\TestDeploy\nuxt-app"
+            if (!(Test-Path $destination)) { New-Item -ItemType Directory -Path $destination }
+            Remove-Item "$destination\*" -Recurse -Force -ErrorAction SilentlyContinue
+            Copy-Item "$source\*" "$destination" -Recurse
+          shell: pwsh
