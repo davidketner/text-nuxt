@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - develop
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Zvol prostředí pro deploy'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
 
 jobs:
   build:
@@ -29,4 +38,24 @@ jobs:
         with:
           include-hidden-files: true
           name: nuxt-iis-output-${{ github.run_id }}
-          path: ./.output        
+          path: ./.output 
+
+    deploy:
+      needs: build
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      runs-on: ${{ inputs.environment == 'production' && 'production-runner' || 'local-runner' }}
+
+      steps:
+        - name: Stáhni artefakt
+          uses: actions/download-artifact@v4
+          with:
+            name: nuxt-iis-output
+            path: ./deploy
+
+        - name: Deploy na IIS
+          shell: pwsh
+          run: |
+            $source = "$(Resolve-Path ./deploy)"
+            $destination = "C:\TestDeploy\nuxt-app"
+            if (!(Test-Path $destination)) { New-Item -ItemType Directory -Path $destination }
+            Copy-Item "$source\*" "$destination" -Recurse -Force                 
