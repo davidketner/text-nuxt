@@ -78,7 +78,10 @@ jobs:
         run: |
           $source = "$(Resolve-Path ./deploy)"
           $destination = "C:\TestDeploy\nuxt-app"
-          if (!(Test-Path $destination)) { New-Item -ItemType Directory -Path $destination }
-          Remove-Item "$destination\*" -Recurse -Force -ErrorAction SilentlyContinue
+          if (Test-Path $destination) {
+            Remove-Item $destination -Recurse -Force
+          }
+          New-Item -ItemType Directory -Path $destination | Out-Null
           Copy-Item "$source\*" "$destination" -Recurse
         shell: powershell
+
