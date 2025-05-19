@@ -25,7 +25,7 @@ jobs:
         run: npx nuxi build --preset=iis_node
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
           name: nuxt-iis-output
-          path: ./.output
+          path: ./.output/public
