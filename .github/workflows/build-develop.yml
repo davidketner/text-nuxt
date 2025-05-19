@@ -23,3 +23,9 @@ jobs:
 
       - name: Build Nuxt app for IIS
         run: npx nuxi build --preset=iis_node
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuxt-iis-output-${{ github.run_id }}
+          path: ./.output        
