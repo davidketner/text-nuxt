@@ -109,5 +109,4 @@ jobs:
           }
           New-Item -ItemType Directory -Path $destination | Out-Null
           Copy-Item "$source\*" "$destination" -Recurse
-        shell: powershell       
-
+        shell: powershell   
