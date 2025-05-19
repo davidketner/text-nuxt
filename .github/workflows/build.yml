@@ -24,10 +24,10 @@ jobs:
       - name: Build Nuxt app for IIS
         run: npx nuxi build --preset=iis_node
 
-      - name: Debug – Find .output
+      - name: Debug – Find .output on Windows
+        shell: pwsh
         run: |
-          echo "Searching for .output directory..."
-          find . -type d -name ".output"
+          Get-ChildItem -Recurse -Directory -Filter ".output"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
