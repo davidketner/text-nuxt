@@ -81,4 +81,4 @@ jobs:
           if (!(Test-Path $destination)) { New-Item -ItemType Directory -Path $destination }
           Remove-Item "$destination\*" -Recurse -Force -ErrorAction SilentlyContinue
           Copy-Item "$source\*" "$destination" -Recurse
-        shell: pwsh
+        shell: powershell
