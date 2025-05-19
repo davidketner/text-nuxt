@@ -1,0 +1,8 @@
+{
+    "name": "testApp",
+    "api": "localhost",
+    "openid": {
+        "url": "apiUrl",
+        "scopes": "test test"
+    }
+}

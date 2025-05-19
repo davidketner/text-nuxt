@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    environment: ${{ github.ref == 'refs/heads/master' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'development' }}
 
     steps:
       - name: Checkout repository
@@ -20,6 +21,33 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Replace config values from secrets
+        shell: pwsh
+        run: |
+          $jsonPath = "./public/assets/config/config.json"
+          $json = Get-Content $jsonPath | ConvertFrom-Json
+
+          $mapping = @{
+            "api" = "${{ secrets.API_URL }}"
+            "openid.url" = "${{ secrets.OPENID_URL }}"
+            "openid.scopes" = "${{ secrets.OPENID_SCOPES }}"
+          }
+
+          foreach ($key in $mapping.Keys) {
+            $pathParts = $key -split '\.'
+            if ($pathParts.Length -eq 1) {
+              $json.$key = $mapping[$key]
+            } elseif ($pathParts.Length -eq 2) {
+              $parent = $pathParts[0]
+              $child = $pathParts[1]
+              if ($json.PSObject.Properties.Name -contains $parent) {
+                $json.$parent.$child = $mapping[$key]
+              }
+            }
+          }
+
+          $json | ConvertTo-Json -Depth 10 | Set-Content $jsonPath        
 
       - name: Build Nuxt app for IIS
         run: npx nuxi build --preset=iis_node
